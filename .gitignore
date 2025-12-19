@@ -1,0 +1,41 @@
+# Hardhat
+cache/
+artifacts/
+typechain-types/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+
+# Remix (not needed with Hardhat)
+remix.config.json
+edr-cache/
+
+# Test coverage
+coverage/
+coverage.json
+.coverage_*
+
+

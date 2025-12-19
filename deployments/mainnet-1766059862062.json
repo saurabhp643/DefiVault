@@ -1,0 +1,14 @@
+{
+  "network": "sepolia",
+  "chainId": "11155111",
+  "contractAddress": "0x07CE08aeBeFD380e9647e41263a886E5fB775029",
+  "owner": "0xf92846433Ed22D46262c6bB818C2bFC1Beaa47c6",
+  "adminSigner": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  "deployer": "0xf92846433Ed22D46262c6bB818C2bFC1Beaa47c6",
+  "deploymentTxHash": "0x9cb4b7a9230bc6716360be8fc65cfa8e6a55655a61ac1cfdc127a6d9aa433253",
+  "maxGasPrice": "150.0 gwei",
+  "maxSwapAmount": "100000.0 USDT",
+  "isPaused": false,
+  "deployedAt": "2025-12-18T12:11:01.977Z",
+  "blockNumber": 9866408
+}
