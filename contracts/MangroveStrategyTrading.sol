@@ -47,7 +47,7 @@ contract MangroveStrategyTrading is Ownable, ReentrancyGuard, Pausable {
     // Admin signer address (backend signs bot public keys)
     address public adminSigner;
 
-    // Security limits packed into struct for gas optimization
+    // Security limits organized in struct for better code structure
     struct SecurityLimits {
         uint256 maxGasPrice;
         uint256 maxSwapAmount;
@@ -355,17 +355,26 @@ contract MangroveStrategyTrading is Ownable, ReentrancyGuard, Pausable {
         uint256 swapNonce,
         bytes memory botSignature
     ) external nonReentrant whenNotPaused {
+        // Cache storage values to avoid multiple SLOAD operations (significant gas savings)
+        SecurityLimits memory limits = securityLimits;
+        bytes4 functionSelector = bytes4(swapCalldata[:4]);
+
         // Gas price check
-        if (tx.gasprice > securityLimits.maxGasPrice) revert GasPriceTooHigh();
+        if (tx.gasprice > limits.maxGasPrice) revert GasPriceTooHigh();
 
         // Maximum swap amount check
-        if (amountIn > securityLimits.maxSwapAmount) revert ExceedsMaxSwapAmount();
+        if (amountIn > limits.maxSwapAmount) revert ExceedsMaxSwapAmount();
+
+        // Cache user+bot state for multiple accesses
+        bool isBotRegistered_ = botRegistered[userAddress][botAddress];
+        bool inTrade_ = inTrade[userAddress][botAddress];
+        uint256 currentNonce = nonce[userAddress][botAddress];
 
         // Concurrent trade protection
-        if (inTrade[userAddress][botAddress]) revert TradeInProgress();
+        if (inTrade_) revert TradeInProgress();
         inTrade[userAddress][botAddress] = true;
 
-        if (!botRegistered[userAddress][botAddress]) revert Unauthorized();
+        if (!isBotRegistered_) revert Unauthorized();
 
         // Authorization: either user directly or bot with valid signature
         if (msg.sender != userAddress) {
@@ -388,9 +397,9 @@ contract MangroveStrategyTrading is Ownable, ReentrancyGuard, Pausable {
         }
 
         // Verify nonce (replay protection)
-        if (swapNonce != nonce[userAddress][botAddress]) revert InvalidNonce();
+        if (swapNonce != currentNonce) revert InvalidNonce();
         unchecked {
-            nonce[userAddress][botAddress]++;
+            nonce[userAddress][botAddress] = currentNonce + 1;
         }
 
         // Validate parameters
@@ -398,7 +407,7 @@ contract MangroveStrategyTrading is Ownable, ReentrancyGuard, Pausable {
         if (tokenIn == address(0) || tokenOut == address(0)) revert ZeroAddress();
 
         // Verify router is whitelisted for this user+bot combination
-        if (!whitelistedRouters[userAddress][botAddress][router][bytes4(swapCalldata[:4])]) {
+        if (!whitelistedRouters[userAddress][botAddress][router][functionSelector]) {
             revert RouterNotWhitelisted();
         }
 
@@ -510,7 +519,7 @@ contract MangroveStrategyTrading is Ownable, ReentrancyGuard, Pausable {
         // Add received output tokens
         balances[userAddress][botAddress][tokenOut] += actualAmountOut;
 
-        // Reset allowance to 0 for security
+        // Reset allowance to 0 for security (only if needed to prevent leftover approvals)
         uint256 remainingAllowance = IERC20(tokenIn).allowance(address(this), router);
         if (remainingAllowance > 0) {
             IERC20(tokenIn).safeDecreaseAllowance(router, remainingAllowance);
